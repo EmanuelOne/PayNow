@@ -1,15 +1,12 @@
 import expressAsyncHandler from "express-async-handler";
 import nodemailer from "nodemailer";
-import User from "../models/userModel.js";
 import generateToken from "./generateToken.js";
-export const sendMail = expressAsyncHandler(async (req, res) => {
-  // const userVerified = await user.save();
-
-  const { email, _id } = req.user;
+export const sendMail = async ({ email, text, subject }) => {
   // let verifyCode = Math.floor(100000 + Math.random() * 900000)
   //   .toString()
   //   .substring(0, 4);
   // generateToken()
+
   if (!email) throw new Error("Email is required!!");
 
   const config = {
@@ -37,12 +34,8 @@ export const sendMail = expressAsyncHandler(async (req, res) => {
   let mailOptions = {
     from: "emanuelmechie@gmail.com",
     to: email,
-    subject: "Verify your Account PayEasy",
-    html: `<p>Verification Code <a target="_blank" href=${
-      "http://localhost:5000" + process.env.API_VERSION
-    }/verify?verify=${generateToken(
-      _id
-    )}>Cick Here to verify your account</a></p>`,
+    subject: subject,
+    html: text,
   };
   transporter.sendMail(mailOptions, function (err, data) {
     if (err) {
@@ -51,4 +44,4 @@ export const sendMail = expressAsyncHandler(async (req, res) => {
       res.json("Email sent successfully");
     }
   });
-});
+};

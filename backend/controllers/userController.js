@@ -2,6 +2,7 @@ import asyncHandler from "express-async-handler";
 import generateToken from "../utils/generateToken.js";
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
+import { sendMail } from "../utils/sendMailCotroller.js";
 // @desc    Auth user & get token
 // @route   POST /api/users/login
 // @access  Public
@@ -190,6 +191,24 @@ const resetPassword = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
 });
+const verifyEmail = asyncHandler(async (req, res) => {
+  const user = req.user;
+  if (user) {
+    const { _id } = user;
+    const text = `<p>Verification Code <a target="_blank" href=${
+      "http://localhost:5000" + process.env.API_VERSION
+    }/verify?verify=${generateToken(
+      _id
+    )}>Cick Here to verify your account</a></p>`;
+    const subject = "Verify your account";
+    sendMail({ email: user.email, text, subject });
+    //come back here
+    res.json("Email sent successfully");
+  } else {
+    res.status(403);
+    throw new Error("No user Found");
+  }
+});
 
 const verifyUser = asyncHandler(async (req, res) => {
   const { verify } = req.query;
@@ -218,4 +237,5 @@ export {
   getUserById,
   verifyUser,
   updateUser,
+  verifyEmail,
 };

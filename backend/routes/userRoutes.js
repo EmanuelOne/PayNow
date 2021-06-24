@@ -10,6 +10,7 @@ import {
   getUserById,
   updateUser,
   verifyUser,
+  verifyEmail,
 } from "../controllers/userController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 import { sendMail } from "../utils/sendMailCotroller.js";
@@ -26,7 +27,7 @@ router
   .delete(protect, deleteUser)
   .get(protect, admin, getUserById)
   .put(protect, admin, updateUser);
-router.route("/send_mail").post(protect, sendMail);
+router.route("/verify_email").post(protect, verifyEmail);
 router.route("/verify").get(verifyUser);
 
 export default router;

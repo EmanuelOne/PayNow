@@ -4,7 +4,7 @@ import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import { sendMail } from "../utils/sendMailCotroller.js";
 // @desc    Auth user & get token
-// @route   POST /api/users/login
+// @route   POST /api/v1/login
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -26,9 +26,8 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new Error("Invalid email or password");
   }
 });
-
-// @desc    Register a new user
-// @route   POST /api/users
+// @desc    Register User
+// @route   POST /api/v1/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password, pin } = req.body;
@@ -61,7 +60,7 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 // @desc    Get user profile
-// @route   GET /api/users/profile
+// @route   GET /api/v1/profile
 // @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select("-password -pin");
@@ -103,7 +102,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 });
 
 // @desc    Get all users
-// @route   GET /api/users
+// @route   GET /api/v1/register
 // @access  Private/Admin
 const getUsers = asyncHandler(async (req, res) => {
   const users = await User.find({});
@@ -175,24 +174,47 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 });
 
-const resetPassword = asyncHandler(async (req, res) => {
-  const { key } = req.query;
+// @desc    Send Reset Password
+// @route   POST /api/v1/send_reset_password
+// @access  PUBLIC
 
-  const decoded = jwt.verify(key, process.env.JWT_SECRET);
+const sendResetPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email: email });
+  if (user) {
+    const { _id } = user;
+    const text = `<p>Verification Code <a target="_blank" href=${
+      process.env.URL + process.env.API_VERSION
+    }/reset_password?reset=${generateToken(
+      _id
+    )}>Cick Here to Reset your Password</a></p>`;
+    const subject = "Reset Your Password";
+    sendMail({ email: user.email, text, subject });
+  } else res.status(401).json({ status: "Error", message: "Email not valid" });
+});
+const resetPassword = asyncHandler(async (req, res) => {
+  const { password, token } = req.body;
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
   if (decoded) {
-    const { id } = decoded;
-    const user = await User.findById(id).select("-password");
-    user.isVerified = true;
-    user.save();
-    //come back here
-    res.redirect("https://google.com");
-  } else {
-    res.status(404);
-    throw new Error("User not found");
+    const user = await User.findById(decoded.id);
+    if (user) {
+      user.password = password;
+      user.save();
+      res.status(201).json("Password Reset Successfully");
+      //come back here
+
+      // res.redirect("https://google.com");
+    } else {
+      res.status(404);
+      throw new Error("User not found");
+    }
   }
 });
+
 const verifyEmail = asyncHandler(async (req, res) => {
   const user = req.user;
+
   if (user) {
     const { _id } = user;
     const text = `<p>Verification Code <a target="_blank" href=${
@@ -213,7 +235,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
 const verifyUser = asyncHandler(async (req, res) => {
   const { verify } = req.query;
 
-  const decoded = jwt.verify(key, process.env.JWT_SECRET);
+  const decoded = jwt.verify(verify, process.env.JWT_SECRET);
   if (decoded) {
     const { id } = decoded;
     const user = await User.findById(id).select("-password");

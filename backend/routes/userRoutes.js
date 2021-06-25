@@ -27,7 +27,8 @@ router
   .delete(protect, deleteUser)
   .get(protect, admin, getUserById)
   .put(protect, admin, updateUser);
-router.route("/verify_email").post(protect, verifyEmail);
-router.route("/verify").get(verifyUser);
+
+router.route("/verify_email").post(protect, verifyEmail).get(verifyUser);
+// router.route("/reset_password").post(protect, res).get(verifyUser);
 
 export default router;

@@ -190,6 +190,7 @@ const sendResetPassword = asyncHandler(async (req, res) => {
     )}>Cick Here to Reset your Password</a></p>`;
     const subject = "Reset Your Password";
     sendMail({ email: user.email, text, subject });
+    res.json("Email sent!!");
   } else res.status(401).json({ status: "Error", message: "Email not valid" });
 });
 const resetPassword = asyncHandler(async (req, res) => {
@@ -215,18 +216,19 @@ const resetPassword = asyncHandler(async (req, res) => {
 const verifyEmail = asyncHandler(async (req, res) => {
   const user = req.user;
 
-  if (user) {
+  if (user && !user.isVerified) {
     const { _id } = user;
     const text = `<p>Verification Code <a target="_blank" href=${
-      "http://localhost:5000" + process.env.API_VERSION
-    }/verify?verify=${generateToken(
+      process.env.URL + process.env.API_VERSION
+    }/verify_email?verify=${generateToken(
       _id
     )}>Cick Here to verify your account</a></p>`;
     const subject = "Verify your account";
     sendMail({ email: user.email, text, subject });
     //come back here
-    res.json("Email sent successfully");
-  } else {
+    res.json(`email sent to ${user.email} successfully`);
+  } else if (user.isVerified) res.status(403).json("User already verify");
+  else {
     res.status(403);
     throw new Error("No user Found");
   }
@@ -260,4 +262,6 @@ export {
   verifyUser,
   updateUser,
   verifyEmail,
+  resetPassword,
+  sendResetPassword,
 };

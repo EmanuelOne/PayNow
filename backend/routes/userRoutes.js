@@ -11,9 +11,10 @@ import {
   updateUser,
   verifyUser,
   verifyEmail,
+  sendResetPassword,
+  resetPassword,
 } from "../controllers/userController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
-import { sendMail } from "../utils/sendMailCotroller.js";
 
 router.route("/register").post(registerUser).get(getUsers);
 
@@ -29,6 +30,6 @@ router
   .put(protect, admin, updateUser);
 
 router.route("/verify_email").post(protect, verifyEmail).get(verifyUser);
-// router.route("/reset_password").post(protect, res).get(verifyUser);
+router.route("/reset_password").post(sendResetPassword).get(resetPassword);
 
 export default router;

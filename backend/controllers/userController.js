@@ -194,14 +194,11 @@ const sendResetPassword = asyncHandler(async (req, res) => {
   } else res.status(401).json({ status: "Error", message: "Email not valid" });
 });
 const resetPassword = asyncHandler(async (req, res) => {
-  const { password, token } = req.body;
-
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const { reset } = req.query;
+  const decoded = jwt.verify(reset, process.env.JWT_SECRET);
   if (decoded) {
     const user = await User.findById(decoded.id);
     if (user) {
-      user.password = password;
-      user.save();
       res.status(201).json("Password Reset Successfully");
       //come back here
 

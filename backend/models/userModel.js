@@ -23,14 +23,17 @@ const userSchema = mongoose.Schema(
       default: false,
     },
     //find algorithm for this
-    accountId: {
-      type: String,
-      required: true,
-      default: "11001111",
-    },
+
     isVerified: {
-      type: Boolean,
-      default: false,
+      type: String,
+      default: "",
+    },
+    refresh: {
+      type: String,
+      default: "",
+    },
+    accountId: {
+      type: mongoose.Number,
     },
     pin: {
       type: String,
@@ -38,8 +41,9 @@ const userSchema = mongoose.Schema(
       default: "1234",
       unique: false,
     },
-    verifyCode: {
-      type: String,
+    balance: {
+      type: mongoose.Number,
+      default: 0.0,
     },
   },
   {

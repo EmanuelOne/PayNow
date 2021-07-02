@@ -13,6 +13,7 @@ import {
   verifyEmail,
   sendResetPassword,
   resetPassword,
+  deleteAllUser,
 } from "../controllers/userController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 
@@ -25,11 +26,12 @@ router
   .put(protect, updateUserProfile);
 router
   .route("/delete")
-  .delete(protect, deleteUser)
+  .delete(deleteAllUser)
   .get(protect, admin, getUserById)
   .put(protect, admin, updateUser);
 
-router.route("/verify_email").post(protect, verifyEmail).get(verifyUser);
+router.route("/send_verify_email").post(protect, verifyEmail);
+router.route("/verify_email").post(protect, verifyUser);
 router.route("/reset_password").post(sendResetPassword).get(resetPassword);
 
 export default router;

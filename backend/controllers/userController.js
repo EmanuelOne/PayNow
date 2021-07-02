@@ -3,6 +3,8 @@ import generateToken from "../utils/generateToken.js";
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import { sendMail } from "../utils/sendMailCotroller.js";
+import refreshPasswordModel from "../models/refreshPasswordModel.js";
+import AccountId from "../models/accountModel.js";
 // @desc    Auth user & get token
 // @route   POST /api/v1/login
 // @access  Public
@@ -10,6 +12,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
 
+  const userAccountId = await AccountId.findOne({ user: user._id });
   if (user && (await user.matchPassword(password))) {
     res.json({
       _id: user._id,
@@ -18,7 +21,7 @@ const loginUser = asyncHandler(async (req, res) => {
       isAdmin: user.isAdmin,
       token: generateToken(user._id),
       refreshToken: generateToken(user._id, "refreshToken"),
-      accountID: user.accountId,
+      accountID: userAccountId.value,
       isVerified: user.isVerified,
     });
   } else {
@@ -45,14 +48,33 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
     pin,
   });
+  console.log(user);
+
+  //   await accountId.save();
+  // });
+  //110011
+  //
 
   if (user) {
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin,
-    });
+    //start from 110011
+    // if it reach  119911
+
+    const createAccountId = await User.findOne(
+      {},
+      { sort: { _id: -1 }, limit: 1 },
+      async (err, _user) => {
+        console.log(_user);
+      }
+    );
+
+    if (createAccountId) {
+      res.status(201).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      });
+    }
   } else {
     res.status(400);
     throw new Error("Invalid user data");
@@ -113,21 +135,19 @@ const getUsers = asyncHandler(async (req, res) => {
 // @route   DELETE /api/users/:id
 // @access  Private/Admin
 const deleteUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
-
+  const { user } = req;
   if (user) {
     await user.remove();
     res.json({ message: "User removed" });
   } else {
-    res.status(404);
-    throw new Error("deleted successfully not found");
+    res.status(404).json("User not found");
   }
 });
 const deleteAllUser = asyncHandler(async (req, res) => {
   const user = await User.deleteMany({});
 
-  if (user) {
-    await user.remove();
+  if (true) {
+    // await user.remove();
     res.json({ message: "User removed" });
   } else {
     res.status(404);
@@ -180,24 +200,25 @@ const updateUser = asyncHandler(async (req, res) => {
 
 const sendResetPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  const user = await User.findOne({ email: email });
+  const user = await User.findOne({ email });
+  // console.log(user, email);
   if (user) {
     const { _id } = user;
-    const text = `<p>Verification Code <a target="_blank" href=${
-      process.env.URL + process.env.API_VERSION
-    }/reset_password?reset=${generateToken(
-      _id
-    )}>Cick Here to Reset your Password</a></p>`;
+    const g = verifyToken();
+    user.refresh = g;
+
+    await user.save();
+
+    const text = `<p>Your reset code code <br/> <h2>${g}</h2></p>`;
     const subject = "Reset Your Password";
     sendMail({ email: user.email, text, subject });
     res.json("Email sent!!");
   } else res.status(401).json({ status: "Error", message: "Email not valid" });
 });
 const resetPassword = asyncHandler(async (req, res) => {
-  const { reset } = req.query;
-  const decoded = jwt.verify(reset, process.env.JWT_SECRET);
-  if (decoded) {
-    const user = await User.findById(decoded.id);
+  const { reset_token } = req.body;
+  if (reset_token) {
+    const user = await User.findOne(user.id);
     if (user) {
       res.status(201).json("Password Reset Successfully");
       //come back here
@@ -210,21 +231,30 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 });
 
+function verifyToken() {
+  return Math.floor(1000 + Math.random() * 9000);
+}
 const verifyEmail = asyncHandler(async (req, res) => {
-  const user = req.user;
+  const { user } = req;
 
-  if (user && !user.isVerified) {
+  if (user && user.isVerified !== "true") {
     const { _id } = user;
-    const text = `<p>Verification Code <a target="_blank" href=${
-      process.env.URL + process.env.API_VERSION
-    }/verify_email?verify=${generateToken(
-      _id
-    )}>Cick Here to verify your account</a></p>`;
+    const user_ = await User.findOne({ email: user.email });
+    let g = verifyToken();
+    if (user_) {
+      user_.isVerified = g;
+      console.log(user_);
+
+      await user_.save();
+    }
+
+    const text = `<p>Your Verification Code is <h2>${g}</h2> </p>`;
     const subject = "Verify your account";
     sendMail({ email: user.email, text, subject });
     //come back here
     res.json(`email sent to ${user.email} successfully`);
-  } else if (user.isVerified) res.status(403).json("User already verify");
+  } else if (user.isVerified === "true")
+    res.status(403).json("User already verify");
   else {
     res.status(403);
     throw new Error("No user Found");
@@ -232,16 +262,16 @@ const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 const verifyUser = asyncHandler(async (req, res) => {
-  const { verify } = req.query;
-
-  const decoded = jwt.verify(verify, process.env.JWT_SECRET);
-  if (decoded) {
-    const { id } = decoded;
-    const user = await User.findById(id).select("-password");
+  const { verify_token } = req.body;
+  const { user } = req;
+  // console.log(user);
+  if (user && verify_token && user.isVerified === verify_token) {
+    // const user = await User.findById(id).select("-password");
     user.isVerified = true;
-    user.save();
+
+    await user.save();
     //come back here
-    res.redirect("https://google.com");
+    res.json("User verified");
   } else {
     res.status(404);
     throw new Error("User not found");
@@ -260,5 +290,6 @@ export {
   updateUser,
   verifyEmail,
   resetPassword,
+  deleteAllUser,
   sendResetPassword,
 };

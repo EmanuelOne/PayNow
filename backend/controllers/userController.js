@@ -1,10 +1,8 @@
 import asyncHandler from "express-async-handler";
 import generateToken from "../utils/generateToken.js";
 import User from "../models/userModel.js";
-import jwt from "jsonwebtoken";
 import { sendMail } from "../utils/sendMailCotroller.js";
-import refreshPasswordModel from "../models/refreshPasswordModel.js";
-import AccountId from "../models/accountModel.js";
+import History from "../models/historyModel.js";
 // @desc    Auth user & get token
 // @route   POST /api/v1/login
 // @access  Public
@@ -12,7 +10,6 @@ const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
 
-  const userAccountId = await AccountId.findOne({ user: user._id });
   if (user && (await user.matchPassword(password))) {
     res.json({
       _id: user._id,
@@ -21,8 +18,9 @@ const loginUser = asyncHandler(async (req, res) => {
       isAdmin: user.isAdmin,
       token: generateToken(user._id),
       refreshToken: generateToken(user._id, "refreshToken"),
-      accountID: userAccountId.value,
+      accountID: user.accountId,
       isVerified: user.isVerified,
+      balance: user.balance,
     });
   } else {
     res.status(401);
@@ -33,51 +31,51 @@ const loginUser = asyncHandler(async (req, res) => {
 // @route   POST /api/v1/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, pin } = req.body;
+  const { name, email, password, pin, balance } = req.body;
 
   const userExists = await User.findOne({ email });
 
+  let user;
   if (userExists) {
     res.status(400).json("User already exists");
-    throw new Error("User already exists");
-  }
-
-  const user = await User.create({
-    name,
-    email,
-    password,
-    pin,
-  });
-  console.log(user);
-
-  //   await accountId.save();
-  // });
-  //110011
-  //
-
-  if (user) {
-    //start from 110011
-    // if it reach  119911
-
+  } else {
     const createAccountId = await User.findOne(
       {},
       { sort: { _id: -1 }, limit: 1 },
-      async (err, _user) => {
-        console.log(_user);
+      async (err, lastUser) => {
+        // res.json({ name: lastUser + "last User" });
+        if (lastUser) {
+          const { _id } = lastUser;
+          const getPrevUser = await User.findById(_id);
+          const prevAccountId = getPrevUser.accountId;
+          const accountId = prevAccountId + 1;
+          user = await User.create({
+            name,
+            email,
+            password,
+            pin,
+            accountId: accountId,
+          });
+          console.log(user);
+
+          if (user) {
+            res.json(user);
+          } else {
+            res.status(400).json("Invalid user data");
+          }
+        } else {
+          user = await User.create({
+            name,
+            email,
+            password,
+            pin,
+            accountId: 110011,
+            balance: balance ? balance : 0,
+          });
+          res.json(user);
+        }
       }
     );
-
-    if (createAccountId) {
-      res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        isAdmin: user.isAdmin,
-      });
-    }
-  } else {
-    res.status(400);
-    throw new Error("Invalid user data");
   }
 });
 
@@ -145,8 +143,8 @@ const deleteUser = asyncHandler(async (req, res) => {
 });
 const deleteAllUser = asyncHandler(async (req, res) => {
   const user = await User.deleteMany({});
-
-  if (true) {
+  const history = await History.deleteMany({});
+  if (user) {
     // await user.remove();
     res.json({ message: "User removed" });
   } else {

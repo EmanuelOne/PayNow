@@ -6,12 +6,11 @@ import morgan from "morgan";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 import connectDB from "./config/db.js";
 
-import productRoutes from "./routes/productRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-import orderRoutes from "./routes/orderRoutes.js";
+import transactionsRoute from "./routes/transactionsRoutes.js";
+import historyRoute from "./routes/historyRoute.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import refreshTokenRoute from "./routes/tokenRoute.js";
-import { sendMail } from "./utils/sendMailCotroller.js";
 
 dotenv.config();
 
@@ -23,12 +22,14 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
+const router = express.Router();
+
 app.use(express.json());
 const apiVersion = process.env.API_VERSION;
+app.use(apiVersion, historyRoute);
 app.use(apiVersion, userRoutes);
-app.use(apiVersion, productRoutes);
 app.use(apiVersion, refreshTokenRoute);
-app.use(apiVersion, orderRoutes);
+app.use(apiVersion, transactionsRoute);
 // app.use('/api/upload', uploadRoutes)
 
 app.get("/api/config/paypal", (req, res) =>

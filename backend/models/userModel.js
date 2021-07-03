@@ -38,7 +38,6 @@ const userSchema = mongoose.Schema(
     pin: {
       type: String,
       required: true,
-      default: "1234",
       unique: false,
     },
     balance: {

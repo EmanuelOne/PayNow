@@ -1,7 +1,8 @@
 const notFound = (req, res, next) => {
-  const error = new Error(`Not Found - ${req.originalUrl}`);
-  res.status(404);
-  next(error);
+  res
+    .status(404)
+    .json({ error: "Wrong Route or Request", url: req.originalUrl });
+  next();
 };
 
 const errorHandler = (err, req, res, next) => {

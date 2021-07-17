@@ -8,16 +8,18 @@ import connectDB from "./config/db.js";
 
 import userRoutes from "./routes/userRoutes.js";
 import transactionsRoute from "./routes/transactionsRoutes.js";
-import historyRoute from "./routes/historyRoute.js";
+import otherRoutes from "./routes/otherRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import refreshTokenRoute from "./routes/tokenRoute.js";
+import fs from "fs";
 
 dotenv.config();
 
 connectDB();
 
 const app = express();
-
+const __dirname = path.resolve();
+console.log();
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
@@ -25,12 +27,13 @@ if (process.env.NODE_ENV === "development") {
 const router = express.Router();
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 const apiVersion = process.env.API_VERSION;
-app.use(apiVersion, historyRoute);
+app.use(apiVersion, otherRoutes);
 app.use(apiVersion, userRoutes);
 app.use(apiVersion, refreshTokenRoute);
 app.use(apiVersion, transactionsRoute);
-// app.use('/api/upload', uploadRoutes)
+app.use(apiVersion, uploadRoutes);
 
 app.get("/api/config/paypal", (req, res) =>
   res.send(process.env.PAYPAL_CLIENT_ID)
@@ -38,10 +41,10 @@ app.get("/api/config/paypal", (req, res) =>
 app.get("*", (req, res) => {
   res.send("API not found check github.....");
 });
-app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+app.use(notFound);
 
 app.listen(
   PORT,

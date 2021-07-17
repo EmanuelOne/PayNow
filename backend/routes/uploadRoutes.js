@@ -1,6 +1,7 @@
 import path from "path";
 import express from "express";
 import multer from "multer";
+import { uploader } from "../utils/cloudinary.js";
 const router = express.Router();
 
 const storage = multer.diskStorage({
@@ -34,7 +35,9 @@ const upload = multer({
   },
 });
 
-router.post("/", upload.single("image"), (req, res) => {
+router.post("/upload_image", upload.single("image"), (req, res) => {
+  console.log(req.file.path);
+  uploader(req.file.path);
   res.send(`/${req.file.path}`);
 });
 

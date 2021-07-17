@@ -3,79 +3,87 @@ import generateToken from "../utils/generateToken.js";
 import User from "../models/userModel.js";
 import { sendMail } from "../utils/sendMailCotroller.js";
 import History from "../models/historyModel.js";
+import Pin from "../models/pinModel.js";
+import { decript, hash } from "../utils/hasher.js";
+
 // @desc    Auth user & get token
 // @route   POST /api/v1/login
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
-
-  if (user && (await user.matchPassword(password))) {
+  // input -> hashed
+  if (user && (await decript(password, user.password))) {
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
       token: generateToken(user._id),
-      refreshToken: generateToken(user._id, "refreshToken"),
+
       accountID: user.accountId,
       isVerified: user.isVerified,
       balance: user.balance,
     });
-  } else {
-    res.status(401);
-    throw new Error("Invalid email or password");
-  }
+  } else res.status(401).json("Invalid email or password");
 });
+
+//michaelshow99;
+
 // @desc    Register User
 // @route   POST /api/v1/register
 // @access  Public
-const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, pin, balance } = req.body;
+const registerUser = asyncHandler(async (req, res, next) => {
+  let { name, email, password, pin, balance } = req.body;
 
   const userExists = await User.findOne({ email });
-
+  if (!(name && email && password)) {
+    return res.status(400).json("Data Not Complete");
+  }
   let user;
-  if (userExists) {
-    res.status(400).json("User already exists");
-  } else {
+  password = await hash(10, password);
+  try {
+    if (userExists) return res.status(400).json("User already exists");
+
     const createAccountId = await User.findOne(
       {},
-      { sort: { _id: -1 }, limit: 1 },
-      async (err, lastUser) => {
-        // res.json({ name: lastUser + "last User" });
-        if (lastUser) {
-          const { _id } = lastUser;
-          const getPrevUser = await User.findById(_id);
-          const prevAccountId = getPrevUser.accountId;
-          const accountId = prevAccountId + 1;
-          user = await User.create({
-            name,
-            email,
-            password,
-            pin,
-            accountId: accountId,
-          });
-          console.log(user);
-
-          if (user) {
-            res.json(user);
-          } else {
-            res.status(400).json("Invalid user data");
-          }
-        } else {
-          user = await User.create({
-            name,
-            email,
-            password,
-            pin,
-            accountId: 110011,
-            balance: balance ? balance : 0,
-          });
-          res.json(user);
-        }
-      }
+      { sort: { _id: -1 }, limit: 1 }
     );
+    //get last User
+    if (createAccountId) {
+      const { _id } = createAccountId;
+      const getPrevUser = await User.findById(_id);
+      const prevAccountId = getPrevUser.accountId;
+      const accountId = prevAccountId + 1;
+      user = await User.create({
+        name,
+        email,
+        password,
+        pin,
+        accountId: accountId,
+      });
+      console.log(user);
+
+      if (user) {
+        return res.json(user);
+      } else {
+        return res.status(400).json("Invalid user data");
+      }
+    }
+    // first user
+    else {
+      user = await User.create({
+        name,
+        email,
+        password,
+        pin,
+        accountId: 110011,
+        balance: balance ? balance : 0,
+      });
+      return res.json(user);
+    }
+  } catch (err) {
+    throw new Error(err);
   }
 });
 
@@ -144,6 +152,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 const deleteAllUser = asyncHandler(async (req, res) => {
   const user = await User.deleteMany({});
   const history = await History.deleteMany({});
+  await Pin.deleteMany({});
   if (user) {
     // await user.remove();
     res.json({ message: "User removed" });

@@ -4,7 +4,7 @@ const generateToken = (id, type = "token") => {
   let expire = {};
   if (type === "token")
     expire = {
-      expiresIn: "7d",
+      expiresIn: "1d",
     };
   return jwt.sign({ id }, process.env.JWT_SECRET, expire);
 };

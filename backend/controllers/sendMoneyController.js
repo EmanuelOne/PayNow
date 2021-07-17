@@ -33,16 +33,17 @@ export const sendMoneyController = asyncHandler(async (req, res) => {
 
 export const getReceiverInfoContoller = asyncHandler(async (req, res) => {
   const { receiverId } = req.body;
+  console.log(req.user);
   // console.log(receiverId);
   const receivingUser = await User.findOne({ accountId: receiverId });
-  if (receivingUser && receivingUser.email !== req.user.email) {
+  if (receivingUser && receivingUser.email === req.user.email)
+    res.status(400).json("You cannot send money to your self");
+  else if (receivingUser) {
     res.json({
       name: receivingUser.name,
       email: receivingUser.email,
       accountId: receivingUser.accountId,
       balance: receivingUser.balance,
     });
-  } else if (receivingUser.email === req.user.email)
-    res.status(400).json("can not send money to the same account");
-  else res.status(400).json("Receiver not found");
+  } else res.status(400).json("Receiver not found");
 });

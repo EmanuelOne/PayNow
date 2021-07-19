@@ -5,6 +5,7 @@ import { sendMail } from "../utils/sendMailCotroller.js";
 import History from "../models/historyModel.js";
 import Pin from "../models/pinModel.js";
 import { decript, hash } from "../utils/hasher.js";
+import { checkPassword } from "../utils/checkers.js";
 
 // @desc    Auth user & get token
 // @route   POST /api/v1/login
@@ -34,24 +35,26 @@ const loginUser = asyncHandler(async (req, res) => {
 // @route   POST /api/v1/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res, next) => {
-  let { name, email, password, pin, balance } = req.body;
+  let { name, email, password, balance } = req.body;
 
   const userExists = await User.findOne({ email });
   if (!(name && email && password)) {
     return res.status(400).json("Data Not Complete");
   }
   let user;
+  if (!checkPassword(password))
+    return res.status(400).json({
+      error:
+        "Password must be at least 6 characters long with 1 upper case ,1 lower case,1 number and 1 symbol ",
+    });
   password = await hash(10, password);
   try {
     if (userExists) return res.status(400).json("User already exists");
 
-    const createAccountId = await User.findOne(
-      {},
-      { sort: { _id: -1 }, limit: 1 }
-    );
+    const lastAccount = await User.findOne({}, { sort: { _id: -1 }, limit: 1 });
     //get last User
-    if (createAccountId) {
-      const { _id } = createAccountId;
+    if (lastAccount) {
+      const { _id } = lastAccount;
       const getPrevUser = await User.findById(_id);
       const prevAccountId = getPrevUser.accountId;
       const accountId = prevAccountId + 1;
@@ -59,7 +62,6 @@ const registerUser = asyncHandler(async (req, res, next) => {
         name,
         email,
         password,
-        pin,
         accountId: accountId,
       });
       console.log(user);
@@ -76,9 +78,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
         name,
         email,
         password,
-        pin,
         accountId: 110011,
-        balance: balance ? balance : 0,
       });
       return res.json(user);
     }

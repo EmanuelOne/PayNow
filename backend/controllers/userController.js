@@ -5,7 +5,7 @@ import { sendMail } from "../utils/sendMailCotroller.js";
 import History from "../models/historyModel.js";
 import Pin from "../models/pinModel.js";
 import { decript, hash } from "../utils/hasher.js";
-import { checkPassword } from "../utils/checkers.js";
+import { checkPassword, validateEmail } from "../utils/checkers.js";
 
 // @desc    Auth user & get token
 // @route   POST /api/v1/login
@@ -47,6 +47,10 @@ const registerUser = asyncHandler(async (req, res, next) => {
       error:
         "Password must be at least 6 characters long with 1 upper case ,1 lower case,1 number and 1 symbol ",
     });
+  if (!validateEmail(email)) {
+    return res.status(400).json({ error: "Invalid email" });
+  }
+
   password = await hash(10, password);
   try {
     if (userExists) return res.status(400).json("User already exists");
@@ -243,26 +247,26 @@ function verifyToken() {
 }
 const verifyEmail = asyncHandler(async (req, res) => {
   const { user } = req;
+  try {
+    if (user && user.isVerified !== "true") {
+      const { _id } = user;
+      const user_ = await User.findOne({ email: user.email });
+      let g = verifyToken();
+      if (user_) {
+        user_.isVerified = g;
+        console.log(user_);
 
-  if (user && user.isVerified !== "true") {
-    const { _id } = user;
-    const user_ = await User.findOne({ email: user.email });
-    let g = verifyToken();
-    if (user_) {
-      user_.isVerified = g;
-      console.log(user_);
+        await user_.save();
+      }
 
-      await user_.save();
-    }
-
-    const text = `<p>Your Verification Code is <h2>${g}</h2> </p>`;
-    const subject = "Verify your account";
-    sendMail({ email: user.email, text, subject });
-    //come back here
-    res.json(`email sent to ${user.email} successfully`);
-  } else if (user.isVerified === "true")
-    res.status(403).json("User already verify");
-  else {
+      const text = `<p>Your Verification Code is <h2>${g}</h2> </p>`;
+      const subject = "Verify your account";
+      const isMail = sendMail({ email: user.email, text, subject });
+      //come back here
+      if (isMail) return res.json(`email sent to ${user.email} successfully`);
+    } else if (user.isVerified === "true")
+      res.status(403).json("User already verify");
+  } catch (e) {
     res.status(403);
     throw new Error("No user Found");
   }

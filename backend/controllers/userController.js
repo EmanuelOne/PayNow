@@ -281,6 +281,7 @@ const verifyUser = asyncHandler(async (req, res) => {
     // const user = await User.findById(id).select("-password");
     user.isVerified = true;
 
+    // just a
     await user.save();
     //come back here
     res.json("User verified");

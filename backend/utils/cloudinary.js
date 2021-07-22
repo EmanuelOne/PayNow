@@ -10,14 +10,21 @@ const cloudinaryConfig = () =>
     api_secret: process.env.CLOUDSECRETEKEY,
     secure: true,
   });
-function uploader(image) {
-  image = path.join(path.resolve(), image);
-  console.log(image);
+function uploader(req, res, next) {
+  console.log("uploader called");
+  let file = req.file.path;
+  file = path.join(path.resolve(), file);
+  // console.log(file);
 
-  cloudinary.uploader.upload(image, (err, result) => {
-    if (err) throw new Error(err);
-    console.log(result);
-  });
+  cloudinary.uploader
+    .upload(file)
+    .then((result) => {
+      console.log(result);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+  next();
 }
 
 export { uploader };

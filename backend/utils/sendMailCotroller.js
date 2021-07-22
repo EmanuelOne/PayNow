@@ -9,30 +9,27 @@ export const sendMail = async ({ email, text, subject }) => {
 
   if (!email) throw new Error("Email is required!!");
 
-  const config = {
-    access_token:
-      "ya29.a0AfH6SMBG2zwAJ0jjeMe2kuORuDqXTaEcmks5jL8y-rT2ki3vhRSNBTb1m3zf1Fx_r0Jzhr5dSehmJz7Uye6F1d9Iwypc1yq18gtsq68zRrgkT0guOIYhJP92N22CAc2Bj8fZnJK6K_SEdGvi4rgGdaZroEnA",
-    scope: "https://mail.google.com/",
-    token_type: "Bearer",
-    expires_in: 3599,
-    refresh_token:
-      "1//04zN-SfAYzrqtCgYIARAAGAQSNwF-L9IrU8WWMMc8rbOWej46l0gQSui41cLxyohNL-5ZDxkxefy1pJ-yu815uIaQKAQ57AHNpjE",
-  };
+  // create reusable transporter object using the default SMTP transport
   let transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "mail.privateemail.com",
+    port: 587,
+    secure: false, // true for 465, false for other ports
     auth: {
-      type: "OAuth2",
-      user: "emanuelmechie@gmail.com",
-      pass: "85740014Jg",
-      clientId:
-        "434200573777-jpka0pu5bkvd9er1u22c8njv4r0vfve3.apps.googleusercontent.com",
-      clientSecret: "mpFDvkSG5_OXjVC2oihhblAe",
-      refreshToken: config.refresh_token,
+      user: "mail@payeaxi.com",
+      pass: "85740014Jg", // generated ethereal password
     },
   });
-  // http://google.com/
+  // verify connection configuration
+  // transporter.verify(function (error, success) {
+  //   if (error) {
+  //     console.log(error);
+  //   } else {
+  //     console.log("Server is ready to take our messages");
+  //     console.log(success);
+  //   }
+  // });
   let mailOptions = {
-    from: "emanuelmechie@gmail.com",
+    from: "mail@payeaxi.com",
     to: email,
     subject: subject,
     html: text,

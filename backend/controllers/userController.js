@@ -13,6 +13,7 @@ import { checkPassword, validateEmail } from "../utils/checkers.js";
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
+  console.log(user);
   // input -> hashed
   if (user && (await decript(password, user.password))) {
     res.json({
@@ -254,16 +255,16 @@ const verifyEmail = asyncHandler(async (req, res) => {
       let g = verifyToken();
       if (user_) {
         user_.isVerified = g;
-        console.log(user_);
+        // console.log(user_);
 
         await user_.save();
       }
 
       const text = `<p>Your Verification Code is <h2>${g}</h2> </p>`;
       const subject = "Verify your account";
-      const isMail = sendMail({ email: user.email, text, subject });
+      sendMail({ email: user.email, text, subject });
       //come back here
-      if (isMail) return res.json(`email sent to ${user.email} successfully`);
+      res.json(`email sent to ${user.email} successfully`);
     } else if (user.isVerified === "true")
       res.status(403).json("User already verify");
   } catch (e) {

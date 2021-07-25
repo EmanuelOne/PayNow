@@ -52,6 +52,9 @@ const changePin = asyncHandler(async (req, res) => {
   const newPin = await Pin.findOne({
     userId: _id,
   });
+  console.log(pin);
+  if (!pin) return res.status(400).json({ error: "Invalid parameter" });
+
   try {
     if (newPin) {
       newPin.pin = await hash(4, pin);

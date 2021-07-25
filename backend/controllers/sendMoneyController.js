@@ -15,6 +15,11 @@ export const sendMoneyController = asyncHandler(async (req, res) => {
   else if (!pin) return res.status(400).json("Pin is required");
   else if (!(await decript(pin, userPin.pin)))
     return res.status(400).json("Pin does not match");
+  else if (receivingUser === null)
+    return res.status(400).json("User not found");
+  else if (receivingUser.accountId === user.accountId)
+    return res.status(400).json("User cannot send to themselves");
+  else if (!amount) return res.status(400).json("Amount is required");
   // console.log(userPin);
 
   amount = Number(amount);

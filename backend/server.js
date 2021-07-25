@@ -38,9 +38,9 @@ app.use(apiVersion, uploadRoutes);
 app.get("/api/config/paypal", (req, res) =>
   res.send(process.env.PAYPAL_CLIENT_ID)
 );
-app.get("*", (req, res) => {
-  res.send("API not found check github.....");
-});
+// app.get("*", (req, res) => {
+//   res.send("API not found check github.....");
+// });
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;

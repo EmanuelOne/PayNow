@@ -27,13 +27,21 @@ const createPin = asyncHandler(async (req, res) => {
     res.status(400).json("Invalid parameter");
   }
 });
-
-const getPin = asyncHandler(async (req, res) => {
+const verifyPin = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const bodyPin = req.body.pin;
   const pinDb = await Pin.findOne({ userId: _id });
   if (pinDb && (await decript(bodyPin, pinDb.pin))) {
     res.json({ pin: bodyPin });
+  } else {
+    res.status(400).json({ error: "Pin not found!" });
+  }
+});
+const getPin = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const pinDb = await Pin.findOne({ userId: _id });
+  if (pinDb) {
+    res.json({ message: "Pin is found" });
   } else {
     res.status(400).json({ error: "Pin not found!" });
   }
@@ -58,4 +66,4 @@ const deletePins = asyncHandler(async (req, res) => {
   await Pin.deleteMany({});
   res.json("Pins Deleted!!");
 });
-export { createPin, getPin, changePin, deletePins };
+export { createPin, getPin, changePin, deletePins, verifyPin };

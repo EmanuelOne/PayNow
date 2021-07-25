@@ -12,7 +12,7 @@ const historySchema = mongoose.Schema(
       required: true,
     },
 
-    value: {
+    amount: {
       type: mongoose.Number,
       required: true,
     },
@@ -20,6 +20,13 @@ const historySchema = mongoose.Schema(
       time: String,
       date: String,
     },
+    receipientName: {
+      type: String,
+    },
+    receipientId: {
+      type: mongoose.Schema.Types.ObjectId,
+    },
+
     balance: mongoose.Number,
   },
   {

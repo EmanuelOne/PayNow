@@ -4,6 +4,7 @@ import {
   createPin,
   deletePins,
   getPin,
+  verifyPin,
 } from "../controllers/pinController.js";
 import {
   getReceiverInfoContoller,
@@ -16,6 +17,7 @@ import { protect, admin } from "../middleware/authMiddleware.js";
 router.route("/send_money").post(protect, sendMoneyController);
 
 router.route("/get_pin").get(protect, getPin);
+router.route("/verify_pin").get(protect, verifyPin);
 router.route("/change_pin").post(protect, changePin);
 router.route("/create_pin").post(protect, createPin);
 router.route("/change_pin").post(protect, changePin);

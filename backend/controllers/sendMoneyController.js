@@ -1,12 +1,22 @@
 import asyncHandler from "express-async-handler";
+import Pin from "../models/pinModel.js";
 import User from "../models/userModel.js";
+import { decript } from "../utils/hasher.js";
 import { createHistoryController } from "./historyController.js";
 export const sendMoneyController = asyncHandler(async (req, res) => {
-  let { amount, receiverId } = req.body;
+  let { amount, receiverId, pin } = req.body;
   const user = await User.findOne({ email: req.user.email });
   const { balance } = user;
   const receivingUser = await User.findOne({ accountId: receiverId });
-  console.log(user);
+  if (!user) return res.status(400).json("Error please try again");
+  const userPin = await Pin.findOne({ userId: user._id });
+  // console.log(user);
+  if (userPin === null) return res.status(400).json("Pin not created");
+  else if (!pin) return res.status(400).json("Pin is required");
+  else if (!(await decript(pin, userPin.pin)))
+    return res.status(400).json("Pin does not match");
+  // console.log(userPin);
+
   amount = Number(amount);
   if (receivingUser && user.email !== receivingUser.email) {
     if (amount <= balance) {
@@ -15,13 +25,22 @@ export const sendMoneyController = asyncHandler(async (req, res) => {
       receivingUser.balance += amount;
       await user.save();
       await receivingUser.save();
-      createHistoryController(user._id, "send", amount, user.balance);
-      createHistoryController(
-        receivingUser._id,
-        "receive",
-        amount,
-        receivingUser.balance
-      );
+      await createHistoryController({
+        type: "send",
+        amount: amount,
+        userId: user._id,
+        receiverName: receivingUser.name,
+        receiverId: receivingUser._id,
+        balance: user.balance,
+      });
+      await createHistoryController({
+        type: "receive",
+        amount: amount,
+        userId: receivingUser._id,
+        balance: receivingUser.balance,
+        receiverName: user.name,
+        receiverId: user._id,
+      });
       res.json(`${amount} sent Successfully`);
     } else {
       res.status(400).json("In sufficient Funds");
@@ -33,7 +52,7 @@ export const sendMoneyController = asyncHandler(async (req, res) => {
 
 export const getReceiverInfoContoller = asyncHandler(async (req, res) => {
   const { receiverId } = req.body;
-  console.log(req.user);
+  // console.log(req.user);
   // console.log(receiverId);
   const receivingUser = await User.findOne({ accountId: receiverId });
   if (receivingUser && receivingUser.email === req.user.email)

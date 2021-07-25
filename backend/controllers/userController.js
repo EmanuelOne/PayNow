@@ -36,7 +36,7 @@ const loginUser = asyncHandler(async (req, res) => {
 // @route   POST /api/v1/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res, next) => {
-  let { name, email, password, balance } = req.body;
+  let { name, email, password, occupation, isAdmin } = req.body;
 
   const userExists = await User.findOne({ email });
   if (!(name && email && password)) {
@@ -50,6 +50,11 @@ const registerUser = asyncHandler(async (req, res, next) => {
     });
   if (!validateEmail(email)) {
     return res.status(400).json({ error: "Invalid email" });
+  }
+  if (!occupation || occupation.length < 1) {
+    return res
+      .status(400)
+      .json({ error: "Occupation must be more than zero character" });
   }
 
   password = await hash(10, password);
@@ -68,8 +73,11 @@ const registerUser = asyncHandler(async (req, res, next) => {
         email,
         password,
         accountId: accountId,
+        occupation: occupation ? occupation : "",
+        isAdmin: isAdmin ? isAdmin : false,
+        balance: isAdmin ? 200000 : 0,
       });
-      console.log(user);
+      // console.log(user);
 
       if (user) {
         return res.json(user);
@@ -84,6 +92,9 @@ const registerUser = asyncHandler(async (req, res, next) => {
         email,
         password,
         accountId: 110011,
+        occupation: occupation ? occupation : "",
+        isAdmin: isAdmin ? isAdmin : false,
+        balance: isAdmin ? 200000 : 0,
       });
       return res.json(user);
     }
@@ -228,18 +239,33 @@ const sendResetPassword = asyncHandler(async (req, res) => {
   } else res.status(401).json({ status: "Error", message: "Email not valid" });
 });
 const resetPassword = asyncHandler(async (req, res) => {
-  const { reset_token } = req.body;
-  if (reset_token) {
-    const user = await User.findOne(user.id);
-    if (user) {
+  let { email, confirmPassword, password, reset_token } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (
+      reset_token &&
+      password &&
+      confirmPassword &&
+      user.refresh === reset_token &&
+      confirmPassword === password &&
+      checkPassword(password)
+    ) {
+      password = await hash(10, password);
+
+      user.password = password;
+      user.refresh = "";
+      user.save();
+
       res.status(201).json("Password Reset Successfully");
       //come back here
 
       // res.redirect("https://google.com");
     } else {
-      res.status(404);
-      throw new Error("User not found");
+      res.status(401).json("Invalid parameters");
     }
+  } catch (err) {
+    res.status(404).json("User not found");
   }
 });
 
@@ -277,7 +303,8 @@ const verifyUser = asyncHandler(async (req, res) => {
   const { verify_token } = req.body;
   const { user } = req;
   // console.log(user);
-  if (user && verify_token && user.isVerified === verify_token) {
+  if (!verify_token) return res.status(400).json("Verify token not required");
+  if (user && user.isVerified === verify_token) {
     // const user = await User.findById(id).select("-password");
     user.isVerified = true;
 
@@ -285,9 +312,10 @@ const verifyUser = asyncHandler(async (req, res) => {
     await user.save();
     //come back here
     res.json("User verified");
-  } else {
-    res.status(404);
-    throw new Error("User not found");
+  } else if (user._isVerified == "true")
+    return res.status(403).json("User already verify");
+  else {
+    res.status(403).json("invalid verify token ");
   }
 });
 

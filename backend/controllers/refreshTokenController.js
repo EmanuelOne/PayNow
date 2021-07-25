@@ -7,7 +7,7 @@ const getRefreshToken = asyncHandler(async (req, res) => {
   const { token, email } = req.body;
   const user = await User.findOne({ email });
   try {
-    console, log(jwt.verify(token, process.env.JWT_SECRET));
+    jwt.verify(token, process.env.JWT_SECRET);
     res.staus(302).json("Token is fine!!");
   } catch (error) {
     if (user) return res.json({ token: generateToken(user._id) });

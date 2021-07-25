@@ -33,6 +33,7 @@ router
 
 router.route("/send_verify_email").post(protect, verifyEmail);
 router.route("/verify_email").post(protect, verifyUser);
-router.route("/reset_password").post(sendResetPassword).get(resetPassword);
+router.route("/send_reset_password").post(sendResetPassword);
+router.route("/reset_password").post(resetPassword);
 
 export default router;

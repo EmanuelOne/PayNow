@@ -22,6 +22,6 @@ router.route("/change_pin").post(protect, changePin);
 router.route("/create_pin").post(protect, createPin);
 router.route("/change_pin").post(protect, changePin);
 router.route("/delete_pin").post(protect, deletePins);
-
+//add flutterwave
 router.route("/get_account_info").post(protect, getReceiverInfoContoller);
 export default router;
